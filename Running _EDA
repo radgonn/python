@@ -1,0 +1,114 @@
+import pandas as pd 
+import numpy as np 
+import matplotlib.pyplot as plt 
+import seaborn as sns 
+
+df_run=pd.read_csv('activity_log.csv')
+df_run.head()
+# Check for data types and non null data 
+df_run.info()
+df_run=df_run.replace('--',np.nan)
+df_run=df_run.dropna(axis=0,how='any')
+df_run=df_run.drop(df_run[df_run['Activity Type']=='Cardio'].index)
+#Cleaning data
+time_strs=df_run['Time'].astype(str)
+df_run['Time']=pd.to_datetime(time_strs,format='mixed')
+df_run['Time']=df_run['Time'].dt.time
+df_run['Time']
+time_strs1=df_run['Avg Pace'].astype(str)
+df_run['Avg Pace']=pd.to_datetime(time_strs1,format='mixed')
+df_run['Avg Pace']=df_run['Avg Pace'].dt.time
+df_run['Avg Pace']
+time_strs2=df_run['Best Pace'].astype(str)
+df_run['Best Pace']=pd.to_datetime(time_strs2,format='mixed')
+df_run['Best Pace']=df_run['Best Pace'].dt.time
+df_run['Best Pace']
+time_strs3=df_run['Best Lap Time'].astype(str)
+df_run['Best Lap Time']=pd.to_datetime(time_strs3,format='mixed')
+df_run['Best Lap Time']=df_run['Best Lap Time'].dt.time
+df_run['Best Lap Time']
+df_run['Date']=pd.to_datetime(df_run['Date'],format='mixed')
+df_run['Calories']=pd.to_numeric(df_run['Calories'],downcast='integer', errors='coerce')
+df_run['Avg HR']=pd.to_numeric(df_run['Avg HR'],downcast='integer', errors='coerce')
+df_run['Max HR']=pd.to_numeric(df_run['Max HR'],downcast='integer', errors='coerce')
+df_run['Avg Run Cadence']=pd.to_numeric(df_run['Avg Run Cadence'],downcast='integer', errors='coerce')
+df_run['Max Run Cadence']=pd.to_numeric(df_run['Max Run Cadence'],downcast='integer', errors='coerce')
+df_run['Elev Gain']=pd.to_numeric(df_run['Elev Gain'],downcast='integer',errors='coerce')
+df_run['Elev Loss']=pd.to_numeric(df_run['Elev Loss'],downcast='integer',errors='coerce')
+
+df_run=df_run.dropna(axis=0,how='any')
+df_run.info()
+df_run.head()
+
+#statistical analysis
+df_run.describe()
+
+df_run1=df_run[['Distance','Calories','Avg HR','Max HR','Avg Run Cadence','Max Run Cadence','Elev Gain','Elev Loss','Avg Stride Length','Number of Laps']]
+
+#correlation between numerical data 
+correlation=df_run1.corr()
+
+correlation
+
+#Heatmap for correlation
+plt.figure(figsize=(16, 16))
+sns.heatmap(correlation,annot=True,vmin=-1,vmax=1,cmap='coolwarm')
+plt.show()
+
+#Pairplot for relationships
+sns.pairplot(df_run1)
+plt.show()
+#Distance is correlated with calories,number of laps,elev gain,elev loss
+#elev gain and elev loss are correlated 
+#avg stride length,avg run cadence are correlated 
+df_run2=df_run.groupby(df_run['Date'].dt.year).sum(['Distance']).reset_index()
+df_run2
+#bar plot
+plt.figure(figsize=(5,5))
+sns.barplot(data=df_run2,x=df_run2['Distance'],y=df_run2['Calories'])
+plt.show()
+
+df_run.groupby(df_run['Date'].dt.year).count()
+
+#univariate analysis 
+ax=df_run['Distance'].plot(kind='hist',title='Distance covered')
+ax.set_xlabel('Distance')
+plt.show()
+
+ax=df_run['Distance'].plot(kind='kde',title='Distance covered')
+ax.set_xlabel('Distance')
+plt.show()
+
+#multivariate analysis
+df_run3=df_run.groupby(df_run['Date'].dt.year.eq(2018))['Distance'].sum()
+df_run3
+
+df_run3 = df_run[df_run['Date'].dt.year == 2018][['Distance', 'Calories']]
+print(df_run3)
+
+plt.title('Distance Vs. Calories in the year 2018')
+sns.scatterplot(data=df_run3,x='Distance',y='Calories')
+plt.show()
+
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+
+#I am taking only few variables which are correlated with calories
+x=df_run[['Distance','Elev Gain','Elev Loss','Number of Laps']]
+y=df_run['Calories']
+xtrain,xtest,ytrain,ytest=train_test_split(x,y,test_size=0.2,random_state=42)
+
+lr=LinearRegression()
+
+lr.fit(xtrain,ytrain)
+
+ypred=lr.predict(xtest)
+
+ypred
+
+#Mean squared error
+from sklearn.metrics import mean_squared_error
+
+mse=mean_squared_error(ytest,ypred)
+
+mse
